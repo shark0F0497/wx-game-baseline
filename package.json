@@ -1,0 +1,19 @@
+{
+  "name": "wechat-minigame-template",
+  "version": "0.1.0",
+  "private": true,
+  "description": "微信小游戏壳模板：广告调度 / 存档 / 隐私 / 远程配置，玩法以钩子形式插拔",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "dev": "node build.mjs --serve",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run build"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}

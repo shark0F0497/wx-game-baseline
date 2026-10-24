@@ -1,0 +1,18 @@
+{
+  "description": "微信小游戏壳模板（广告 / 存档 / 隐私 / 远程配置）",
+  "compileType": "game",
+  "miniprogramRoot": "dist/",
+  "appid": "touristappid",
+  "projectname": "wechat-minigame-template",
+  "libVersion": "3.6.4",
+  "setting": {
+    "es6": false,
+    "enhance": false,
+    "minified": false,
+    "postcss": false,
+    "urlCheck": false,
+    "ignoreDevUnusedFiles": false,
+    "showShadowRootInWxmlPanel": false
+  },
+  "condition": {}
+}
