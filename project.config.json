@@ -3,7 +3,7 @@
   "compileType": "game",
   "miniprogramRoot": "dist/",
   "appid": "touristappid",
-  "projectname": "wechat-minigame-template",
+  "projectname": "wx-game-baseline",
   "libVersion": "3.6.4",
   "setting": {
     "es6": false,

@@ -1,5 +1,5 @@
 {
-  "name": "wechat-minigame-template",
+  "name": "wx-game-baseline",
   "version": "0.1.0",
   "private": true,
   "description": "微信小游戏壳模板：广告调度 / 存档 / 隐私 / 远程配置，玩法以钩子形式插拔",
