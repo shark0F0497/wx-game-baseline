@@ -80,7 +80,7 @@ export class SettleScene implements Scene {
         variant: 'warn',
         size: 18,
         disabled: this.busy,
-        note: '看视频 · 保留本局分数继续',
+        note: `看视频 · 保留本局分数，再战 ${this.app.config.reviveSeconds} 秒`,
       });
     }
     // 本局 0 金币时双倍没有意义，直接不展示（避免「再得 0 金币」这种尴尬文案）

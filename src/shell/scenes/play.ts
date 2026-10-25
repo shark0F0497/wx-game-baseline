@@ -20,7 +20,8 @@ export class PlayScene implements Scene {
   constructor(private app: AppApi, opts: { revive?: boolean; score?: number } = {}) {
     this.revived = !!opts.revive;
     this.startScore = opts.score ?? 0;
-    this.total = app.config.roundSeconds + (this.revived ? app.config.reviveSeconds : 0);
+    // 复活只买 8 秒，不能把整局时长再加一遍（否则复活一次 = 白送 28 秒）
+    this.total = this.revived ? app.config.reviveSeconds : app.config.roundSeconds;
     this.timeLeft = this.total;
     this.game = createDemoGame({ w: app.vp.w, h: app.vp.h, safeTop: app.vp.safeTop });
     this.game.start();
