@@ -9,6 +9,8 @@ src/
     platform.ts    唯一允许直接调 wx / DOM 的地方
     viewport.ts    逻辑坐标：宽固定 375，高按屏幕比例
     ad/            manager（频控/降级/埋点）+ wx 适配 + mock 回调
+    audio.ts       音效（WebAudio 合成，零音频资源）
+    share.ts       主动分享 + 右上角转发菜单（不给奖励）
     privacy.ts     onNeedPrivacyAuthorization 流程
     remote.ts      远程配置（带本地缓存，失败不阻塞）
     storage.ts     JSON 存档，key 前缀 wmt:
@@ -63,6 +65,14 @@ npm run typecheck
 - 加载失败 / 用户中途关闭 → 返回 `skipped`，调用方照常处理，绝不卡住玩法
 - 插屏没有广告位时直接跳过，不用假弹窗打扰玩家
 
+## 音效与分享
+
+- 音效不打包任何音频文件：`core/audio.ts` 用 WebAudio 合成 `tap / hit / reward / error` 四个短音，
+  首包零增重、也不用等美术。要换采样音效时只改 `Sfx.play()` 内部，调用方 `app.sfx('hit')` 不变。
+- 分享只做两件事：`app.share()` 主动拉起面板、右上角菜单「转发」的默认文案。
+  **分享不返回成功与否，也不发任何奖励** —— 用分享发奖是审核红线。
+- 分享标题 / 5:4 分享图在 `config.shareTitle` / `shareImageUrl` 配。
+
 ## 远程配置
 
 `config.remoteConfigUrl` 指向一个 JSON（云开发静态托管 / 自己的 CDN 都行），
@@ -98,6 +108,7 @@ npm run typecheck
 
 ## M0 已知边界
 
-- 没有音频、没有分包/CDN 资源加载、没有分享图、没有云存档 —— 这些属于 M1。
+- 没有分包 / CDN 资源加载、没有云存档、没有真人榜 —— 这些等品类定了再补。
+- 音效是合成音，分享图用的是系统截图；正式项目换成美术资源即可。
 - 游戏内 HUD 与场景切换是手写立即模式，不是 UI 框架；复杂 UI 建议直接在 `shell/` 里加场景。
 - 浏览器预览只是调试用，广告、隐私、震动都走降级分支；真机行为要在开发者工具 + 真机上复核。

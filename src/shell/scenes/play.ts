@@ -73,8 +73,10 @@ export class PlayScene implements Scene {
 
   onTouch(phase: TouchPhase, x: number, y: number): void {
     if (phase !== 'start' || this.ended) return;
-    // 玩法命中才震，震动放在 shell，玩法保持纯逻辑
-    if (this.game.onDown(x, y) && this.app.state.haptics) haptic();
+    // 命中反馈放在 shell，玩法保持纯逻辑
+    if (!this.game.onDown(x, y)) return;
+    this.app.sfx('hit');
+    if (this.app.state.haptics) haptic();
   }
 
   private finish(): void {

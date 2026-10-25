@@ -3,8 +3,10 @@ import { C } from '../theme';
 import { button, hit, panel, rect, scrim, text } from '../draw';
 import type { AppApi, Rect, Scene, TouchPhase } from '../types';
 
+type RowKey = 'sound' | 'haptics' | 'privacy' | 'clear';
+
 interface Row {
-  key: 'haptics' | 'privacy' | 'clear';
+  key: RowKey;
   r: Rect;
 }
 
@@ -17,11 +19,12 @@ export class SettingsScene implements Scene {
   private layout(): { panel: Rect; close: Rect; rows: Row[] } {
     const vp = this.app.vp;
     const slots = this.app.ad.describe().length;
-    const h = 96 + 3 * 52 + slots * 20 + 76;
+    const keys: RowKey[] = ['sound', 'haptics', 'privacy', 'clear'];
+    const h = 96 + keys.length * 52 + slots * 20 + 76;
     const w = vp.w - 48;
     const y = Math.max(vp.safeTop + 30, (vp.h - h) / 2);
     const p = rect(24, y, w, h);
-    const rows: Row[] = (['haptics', 'privacy', 'clear'] as const).map((key, i) => ({
+    const rows: Row[] = keys.map((key, i) => ({
       key,
       r: rect(p.x + 12, p.y + 88 + i * 52, p.w - 24, 48),
     }));
@@ -41,12 +44,19 @@ export class SettingsScene implements Scene {
     text(g, '设置', p.x + 24, p.y + 42, { size: 26, weight: 800 });
     text(g, 'SETTINGS', p.x + 24, p.y + 62, { size: 10, color: C.acid, mono: true });
 
+    const onOff = (on: boolean): [string, string] => [on ? '开' : '关', on ? C.acid : C.dim];
     const value = (row: Row): [string, string] => {
-      if (row.key === 'haptics') return [this.app.state.haptics ? '开' : '关', this.app.state.haptics ? C.acid : C.dim];
+      if (row.key === 'sound') return onOff(this.app.state.sound);
+      if (row.key === 'haptics') return onOff(this.app.state.haptics);
       if (row.key === 'privacy') return ['查看 →', C.paper];
       return [this.confirmClear ? '再点一次确认' : '清除', this.confirmClear ? C.orange : C.dim];
     };
-    const label = { haptics: '震动反馈', privacy: '用户隐私保护指引', clear: '清空本地进度' };
+    const label: Record<RowKey, string> = {
+      sound: '音效',
+      haptics: '震动反馈',
+      privacy: '用户隐私保护指引',
+      clear: '清空本地进度',
+    };
 
     for (const row of rows) {
       const [v, color] = value(row);
@@ -60,7 +70,7 @@ export class SettingsScene implements Scene {
       g.stroke();
     }
 
-    let y = p.y + 88 + 3 * 52 + 16;
+    let y = p.y + 88 + rows.length * 52 + 16;
     text(g, 'AD SLOTS', p.x + 24, y, { size: 10, color: C.dim, mono: true });
     y += 20;
     for (const s of this.app.ad.describe()) {
@@ -86,7 +96,11 @@ export class SettingsScene implements Scene {
     }
     for (const row of rows) {
       if (!hit(row.r, x, y)) continue;
-      if (row.key === 'haptics') {
+      if (row.key === 'sound') {
+        const on = !this.app.state.sound;
+        this.app.setSound(on);
+        this.app.toast(on ? '音效已开启' : '音效已关闭');
+      } else if (row.key === 'haptics') {
         this.app.state.haptics = !this.app.state.haptics;
         this.app.saveState();
         this.app.toast(this.app.state.haptics ? '震动已开启' : '震动已关闭');

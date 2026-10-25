@@ -1,4 +1,5 @@
 import type { AdManager } from '../core/ad/manager';
+import type { SfxName } from '../core/audio';
 import type { GameConfig } from '../config/game-config';
 import type { Viewport } from '../core/viewport';
 
@@ -25,6 +26,7 @@ export interface RunState {
   best: number;
   runs: number;
   haptics: boolean;
+  sound: boolean;
 }
 
 export interface Scene {
@@ -57,6 +59,10 @@ export interface AppApi {
 
   openSettings(): void;
   closeOverlay(): void;
+
+  sfx(name: SfxName): void;
+  setSound(on: boolean): void;
+  share(): void;
 
   /** 'MOCK' / 'LIVE' / 'OFF'，给 UI 一个诚实的角标 */
   adsLabel(): string;

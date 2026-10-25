@@ -23,6 +23,9 @@ export interface GameConfig {
   remoteConfigUrl: string;
   /** 埋点上报地址，留空 = 只打 console */
   telemetryUrl: string;
+  /** 分享标题 / 5:4 分享图（留空用系统截图） */
+  shareTitle: string;
+  shareImageUrl: string;
   ads: {
     mode: 'auto' | 'mock' | 'real';
     fallbackGrant: boolean;
@@ -39,6 +42,8 @@ export const CONFIG: GameConfig = {
   reviveSeconds: 8,
   remoteConfigUrl: '',
   telemetryUrl: '',
+  shareTitle: '点星 · 20 秒你能点多少个？',
+  shareImageUrl: '',
 
   ads: {
     mode: 'auto',

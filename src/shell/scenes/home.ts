@@ -5,11 +5,12 @@ import type { AppApi, Rect, Scene, TouchPhase } from '../types';
 export class HomeScene implements Scene {
   constructor(private app: AppApi) {}
 
-  private layout(): { start: Rect; settings: Rect } {
+  private layout(): { start: Rect; settings: Rect; share: Rect } {
     const vp = this.app.vp;
     return {
       start: rect(40, vp.h - vp.safeBottom - 214, vp.w - 80, 62),
       settings: rect(vp.w - 78, vp.safeTop + 14, 62, 28),
+      share: rect(vp.w - 150, vp.safeTop + 14, 62, 28),
     };
   }
 
@@ -29,7 +30,7 @@ export class HomeScene implements Scene {
 
   render(g: CanvasRenderingContext2D): void {
     const vp = this.app.vp;
-    const { start, settings } = this.layout();
+    const { start, settings, share } = this.layout();
 
     // 背景装饰：大圆 + 斜线，纯代码不占包体
     g.strokeStyle = 'rgba(242,237,228,0.06)';
@@ -91,6 +92,7 @@ export class HomeScene implements Scene {
     });
 
     badge(g, 24, settings.y + 4, `AD ${this.app.adsLabel()}`);
+    button(g, share, '分享', { variant: 'ghost', size: 12 });
     button(g, settings, '设置', { variant: 'ghost', size: 12 });
 
     text(g, `v${this.app.config.version} · minigame shell`, vp.w / 2, vp.h - vp.safeBottom - 24, {
@@ -103,11 +105,20 @@ export class HomeScene implements Scene {
 
   onTouch(phase: TouchPhase, x: number, y: number): void {
     if (phase !== 'start') return;
-    const { start, settings } = this.layout();
+    const { start, settings, share } = this.layout();
+    if (hit(share, x, y)) {
+      this.app.sfx('tap');
+      this.app.share();
+      return;
+    }
     if (hit(start, x, y)) {
+      this.app.sfx('tap');
       this.app.startRun();
       return;
     }
-    if (hit(settings, x, y)) this.app.openSettings();
+    if (hit(settings, x, y)) {
+      this.app.sfx('tap');
+      this.app.openSettings();
+    }
   }
 }

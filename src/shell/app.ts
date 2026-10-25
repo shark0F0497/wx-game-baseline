@@ -1,10 +1,12 @@
 import { AD_SLOTS } from '../config/ad-slots';
 import { CONFIG, type GameConfig } from '../config/game-config';
 import { AdManager } from '../core/ad/manager';
+import { Sfx, type SfxName } from '../core/audio';
 import type { MockAdRequest } from '../core/ad/types';
 import { DEV } from '../core/env';
 import { IS_WECHAT, WX, bindTouch, createCanvas, raf } from '../core/platform';
 import { ensurePrivacy } from '../core/privacy';
+import { activeShare, setupShareMenu } from '../core/share';
 import * as remote from '../core/remote';
 import * as store from '../core/storage';
 import { Telemetry } from '../core/telemetry';
@@ -27,7 +29,7 @@ interface MockState {
 const SAVE_KEY = 'save:v1';
 
 function freshState(): RunState {
-  return { coins: 0, best: 0, runs: 0, haptics: true };
+  return { coins: 0, best: 0, runs: 0, haptics: true, sound: true };
 }
 
 /**
@@ -43,6 +45,7 @@ export class App implements AppApi {
   state: RunState = freshState();
 
   private telemetry!: Telemetry;
+  private audio = new Sfx(true);
   private scene: Scene | null = null;
   private overlay: Scene | null = null;
   private mock: MockState | null = null;
@@ -86,7 +89,10 @@ export class App implements AppApi {
     });
     if (this.config.ads.enabled) this.ad.init();
 
-    this.state = store.get<RunState>(SAVE_KEY, freshState());
+    // 旧存档可能没有新字段，用默认值补齐
+    this.state = { ...freshState(), ...store.get<RunState>(SAVE_KEY, freshState()) };
+    this.audio = new Sfx(this.state.sound !== false);
+    setupShareMenu(() => ({ title: this.config.shareTitle, imageUrl: this.config.shareImageUrl }));
     this.bindLifecycle();
     this.setScene(new HomeScene(this));
 
@@ -144,6 +150,21 @@ export class App implements AppApi {
 
   openSettings(): void {
     this.overlay = new SettingsScene(this);
+  }
+
+  sfx(name: SfxName): void {
+    this.audio.play(name);
+  }
+
+  setSound(on: boolean): void {
+    this.state.sound = on;
+    this.audio.setEnabled(on);
+    this.saveState();
+  }
+
+  share(): void {
+    this.track('share_tap');
+    activeShare({ title: this.config.shareTitle, imageUrl: this.config.shareImageUrl });
   }
 
   closeOverlay(): void {

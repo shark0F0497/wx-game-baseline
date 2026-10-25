@@ -28,7 +28,7 @@ export class SettleScene implements Scene {
   }
 
   /** 按钮从底部往上堆，缺哪个就不占位（0 金币时不该留一个空洞） */
-  private layout(): { back: Rect; revive: Rect | null; double: Rect | null; replay: Rect } {
+  private layout(): { back: Rect; share: Rect; revive: Rect | null; double: Rect | null; replay: Rect } {
     const vp = this.app.vp;
     const w = vp.w - 64;
     let y = vp.h - vp.safeBottom - 96;
@@ -38,7 +38,13 @@ export class SettleScene implements Scene {
     const double = showDouble ? rect(32, y, w, 60) : null;
     if (showDouble) y -= 78;
     const revive = this.result.revived ? null : rect(32, y, w, 60);
-    return { back: rect(24, vp.safeTop + 14, 82, 30), revive, double, replay };
+    return {
+      back: rect(24, vp.safeTop + 14, 82, 30),
+      share: rect(vp.w - 106, vp.safeTop + 14, 82, 30),
+      revive,
+      double,
+      replay,
+    };
   }
 
   update(): void {
@@ -47,7 +53,7 @@ export class SettleScene implements Scene {
 
   render(g: CanvasRenderingContext2D): void {
     const vp = this.app.vp;
-    const { back, revive, double, replay } = this.layout();
+    const { back, share, revive, double, replay } = this.layout();
     const panelTop = vp.safeTop + 96;
 
     panel(g, rect(32, panelTop, vp.w - 64, 172), { fill: C.panel });
@@ -88,17 +94,25 @@ export class SettleScene implements Scene {
     }
     button(g, replay, '再来一局', { variant: 'ghost', size: 20 });
     button(g, back, '← 首页', { variant: 'ghost', size: 12 });
+    button(g, share, '分享 →', { variant: 'ghost', size: 12 });
   }
 
   onTouch(phase: TouchPhase, x: number, y: number): void {
     if (phase !== 'start') return;
-    const { back, revive, double, replay } = this.layout();
+    const { back, share, revive, double, replay } = this.layout();
 
     if (hit(back, x, y)) {
+      this.app.sfx('tap');
       this.app.setScene(new HomeScene(this.app));
       return;
     }
+    if (hit(share, x, y)) {
+      this.app.sfx('tap');
+      this.app.share();
+      return;
+    }
     if (hit(replay, x, y)) {
+      this.app.sfx('tap');
       this.app.startRun();
       return;
     }
@@ -121,9 +135,11 @@ export class SettleScene implements Scene {
       this.app.addCoins(extra);
       this.doubled = true;
       this.app.track('reward_claim', { slot: 'doubleCoins', value: extra });
+      this.app.sfx('reward');
       this.app.toast(`+${extra} 金币`);
       return;
     }
+    this.app.sfx('error');
     this.app.toast(this.reasonText(out));
   }
 
@@ -134,9 +150,11 @@ export class SettleScene implements Scene {
     this.busy = false;
     if (out.status === 'completed') {
       this.app.track('reward_claim', { slot: 'revive', score: this.result.score });
+      this.app.sfx('reward');
       this.app.reviveRun(this.result.score);
       return;
     }
+    this.app.sfx('error');
     this.app.toast(this.reasonText(out));
   }
 
