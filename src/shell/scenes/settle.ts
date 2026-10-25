@@ -163,6 +163,7 @@ export class SettleScene implements Scene {
       if (out.reason === 'cooldown') return '稍等几秒再试';
       if (out.reason === 'daily-limit') return '今天的次数用完了';
       if (out.reason === 'skip-first-n') return '再玩几局吧';
+      if (out.reason === 'busy') return '广告还在播放，稍等';
       return '暂时不可用';
     }
     if (out.status === 'unavailable') return '广告暂不可用';

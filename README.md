@@ -35,6 +35,9 @@ npm run build      # 产出 dist/game.js + game.json + project.config.json
 npm run typecheck
 ```
 
+浏览器预览时控制台有 `window.__app`（仅 dev），可以直接调
+`__app.ad.showReward('revive')` 这类接口做手动验证，不用点进结算页喵。
+
 微信开发者工具：导入本仓库根目录（`miniprogramRoot: dist/`）。
 若工具提示找不到 `game.js`，把 `dist/` 目录本身当作项目根目录导入即可。
 
@@ -64,6 +67,8 @@ npm run typecheck
 - `unitId` 为空 → mock（开发）或直接发奖（`mode: 'real'` + `fallbackGrant: true`）
 - 加载失败 / 用户中途关闭 → 返回 `skipped`，调用方照常处理，绝不卡住玩法
 - 插屏没有广告位时直接跳过，不用假弹窗打扰玩家
+- 激励视频 / 插屏**串行化**：正在播放时另一条广告直接返回 `blocked: busy`，不会互相打断；
+  所以「结算页 700ms 后弹插屏」和「玩家立刻点复活」撞车时，插屏让位给激励视频
 
 ## 音效与分享
 

@@ -30,18 +30,26 @@ const options = {
   logLevel: 'info',
 };
 
-if (serve) {
-  // 浏览器预览需要一个 index.html（微信开发者工具不会读它）
-  await writeFile(
-    'dist/index.html',
-    `<!doctype html><meta charset="utf-8">
+// 浏览器预览需要一个 index.html（微信开发者工具不会读它）
+const PREVIEW_HTML = `<!doctype html><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>minigame preview</title>
 <style>html,body{margin:0;height:100%;background:#0b0a12;overflow:hidden}
 canvas{display:block;width:100%;height:100%;touch-action:none}</style>
-<script src="game.js"></script>`,
-  );
-  const ctx = await esbuild.context(options);
+<script src="game.js"></script>`;
+
+if (serve) {
+  await writeFile('dist/index.html', PREVIEW_HTML);
+  // 每次重建都补一次：避免 dev 期间跑 npm run build 把预览页删掉后 404
+  const ensurePreview = {
+    name: 'ensure-preview',
+    setup(build) {
+      build.onEnd(async () => {
+        await writeFile('dist/index.html', PREVIEW_HTML);
+      });
+    },
+  };
+  const ctx = await esbuild.context({ ...options, plugins: [ensurePreview] });
   await ctx.watch();
   const server = await ctx.serve({ servedir: 'dist', port: 8080 });
   console.log(`\n浏览器预览: http://localhost:${server.port}\n`);

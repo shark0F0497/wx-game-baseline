@@ -96,6 +96,9 @@ export class App implements AppApi {
     this.bindLifecycle();
     this.setScene(new HomeScene(this));
 
+    // 仅浏览器预览：控制台里可以用 window.__app 调 ad.showReward 等做手动验证
+    if (DEV && !IS_WECHAT) (globalThis as any).__app = this;
+
     raf(this.loop);
   }
 
@@ -254,6 +257,11 @@ export class App implements AppApi {
   // ------------------------------------------------------------ mock 广告
 
   private presentMock(req: MockAdRequest): Promise<boolean> {
+    // 双保险：AdManager 已串行化，这里再挡一次，绝不允许覆盖掉等待中的 resolve
+    if (this.mock) {
+      console.warn('[ad] mock busy, drop', req.slot);
+      return Promise.resolve(false);
+    }
     return new Promise<boolean>((resolve) => {
       const total = req.kind === 'reward' ? 3 : 1.5;
       this.mock = { req, left: total, total, resolve };

@@ -35,6 +35,8 @@ export class AdManager {
   private interstitials = new Map<string, WxInterstitial>();
   private banner: WxBanner | null = null;
   private bannerSlot = '';
+  /** 正在展示的广告数：插屏/激励视频一律串行，防止 mock 层被覆盖、Promise 永远不 resolve */
+  private presenting = 0;
 
   constructor(private opts: AdManagerOptions) {}
 
@@ -58,6 +60,11 @@ export class AdManager {
     const slot = this.opts.slots[name];
     if (!slot || slot.kind !== 'reward') return { slot: name, status: 'unavailable', reason: 'no-slot' };
 
+    if (this.presenting > 0) {
+      this.opts.telemetry.track('ad_blocked', { slot: name, reason: 'busy' });
+      return { slot: name, status: 'blocked', reason: 'busy' };
+    }
+
     const blocked = this.checkFreq(name, slot, 0);
     if (blocked) {
       this.opts.telemetry.track('ad_blocked', { slot: name, reason: blocked });
@@ -68,7 +75,9 @@ export class AdManager {
     let completed = false;
     let reason: string | undefined;
 
-    if (unit) {
+    this.presenting += 1;
+    try {
+      if (unit) {
       this.opts.telemetry.track('ad_show', { slot: name, kind: 'reward', live: true });
       const ad = this.rewardAds.get(name) ?? new WxRewardAd(unit);
       this.rewardAds.set(name, ad);
@@ -78,9 +87,12 @@ export class AdManager {
       this.opts.telemetry.track('ad_show', { slot: name, kind: 'reward', live: false });
       reason = 'fallback';
       completed = this.opts.fallbackGrant;
-    } else {
-      this.opts.telemetry.track('ad_show', { slot: name, kind: 'reward', live: false });
-      completed = await this.opts.presentMock({ slot: name, kind: 'reward' });
+      } else {
+        this.opts.telemetry.track('ad_show', { slot: name, kind: 'reward', live: false });
+        completed = await this.opts.presentMock({ slot: name, kind: 'reward' });
+      }
+    } finally {
+      this.presenting -= 1;
     }
 
     this.commit(name, slot, completed);
@@ -92,6 +104,12 @@ export class AdManager {
     const slot = this.opts.slots[name];
     if (!slot || slot.kind !== 'interstitial') return false;
 
+    // 激励视频正在播放时直接放弃插屏：真机上会互相打断，mock 层也会被覆盖
+    if (this.presenting > 0) {
+      this.opts.telemetry.track('ad_blocked', { slot: name, reason: 'busy' });
+      return false;
+    }
+
     const blocked = this.checkFreq(name, slot, runs);
     if (blocked) {
       this.opts.telemetry.track('ad_blocked', { slot: name, reason: blocked });
@@ -100,19 +118,24 @@ export class AdManager {
 
     const unit = this.unitFor(slot);
     let shown = false;
-    if (unit) {
-      const ad = this.interstitials.get(name) ?? new WxInterstitial(unit);
-      this.interstitials.set(name, ad);
-      this.opts.telemetry.track('ad_show', { slot: name, kind: 'interstitial', live: true });
-      shown = await ad.show();
-      if (!shown) this.opts.telemetry.track('ad_error', { slot: name, kind: 'interstitial' });
-    } else if (this.opts.mode !== 'real') {
-      this.opts.telemetry.track('ad_show', { slot: name, kind: 'interstitial', live: false });
-      shown = await this.opts.presentMock({ slot: name, kind: 'interstitial' });
-    } else {
-      // 没广告位：插屏直接跳过，不要用假弹窗打扰玩家
-      this.opts.telemetry.track('ad_blocked', { slot: name, reason: 'no-unit' });
-      return false;
+    this.presenting += 1;
+    try {
+      if (unit) {
+        const ad = this.interstitials.get(name) ?? new WxInterstitial(unit);
+        this.interstitials.set(name, ad);
+        this.opts.telemetry.track('ad_show', { slot: name, kind: 'interstitial', live: true });
+        shown = await ad.show();
+        if (!shown) this.opts.telemetry.track('ad_error', { slot: name, kind: 'interstitial' });
+      } else if (this.opts.mode !== 'real') {
+        this.opts.telemetry.track('ad_show', { slot: name, kind: 'interstitial', live: false });
+        shown = await this.opts.presentMock({ slot: name, kind: 'interstitial' });
+      } else {
+        // 没广告位：插屏直接跳过，不要用假弹窗打扰玩家
+        this.opts.telemetry.track('ad_blocked', { slot: name, reason: 'no-unit' });
+        return false;
+      }
+    } finally {
+      this.presenting -= 1;
     }
 
     this.commit(name, slot, true);
